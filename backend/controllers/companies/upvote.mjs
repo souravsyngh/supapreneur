@@ -1,27 +1,21 @@
 import { supabase } from '/opt/nodejs/index.mjs';
 
-const headers = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
-
 const handleVoteTransaction = async (userId, companyId) => {
   const response = await supabase.rpc('handle_vote', { p_user_id: userId, p_company_id: companyId });
   return response; 
 };
-
-const isValidUUID = (uuid) => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
-};
-
-export const handler = async (event) => {
+export const handler = async (event) => {  
+   const headers = {
+        'Access-Control-Allow-Origin': '*', 
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json',
+    };
   try {
-    const { userId, companyId } = event.body; // Parse the body
+    const body = JSON.parse(event.body); // Parse the body
+    const { userId, companyId } = body;
 
-    if (!userId || !companyId || !isValidUUID(userId) || !isValidUUID(companyId)) {
+    if (!userId || !companyId) {
       return {
         statusCode: 400,
         headers,
@@ -35,7 +29,7 @@ export const handler = async (event) => {
       throw new Error('Failed to process vote');
     }
 
-    const { action, vote_count } = response.data[0]; 
+    const { action, vote_count } = response.data[0];
 
     console.log(`Vote ${action} for company ${companyId}. New vote count: ${vote_count}`);
 
@@ -49,6 +43,7 @@ export const handler = async (event) => {
       }),
     };
   } catch (error) {
+    console.error('Error in vote handler:', error);
     return {
       statusCode: 500,
       headers,
