@@ -1,72 +1,75 @@
--- Users table
-CREATE TABLE users (
-    firebaseId TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- User profiles table
-CREATE TABLE user_profiles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id TEXT REFERENCES users(firebaseId) ON DELETE CASCADE,
-    education TEXT,
-    profession TEXT,
-    work_history TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Startups table
-CREATE TABLE startups (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    founder_id TEXT REFERENCES users(firebaseId) ON DELETE SET NULL,
-    company_name TEXT NOT NULL,
-    year_founded INTEGER,
+-- Create companies table
+CREATE TABLE companies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Upvotes table
-CREATE TABLE upvotes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id TEXT REFERENCES users(firebaseId) ON DELETE CASCADE,
-    startup_id UUID REFERENCES startups(id) ON DELETE CASCADE,
-    is_upvote BOOLEAN NOT NULL,
+-- Create users table
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, startup_id)
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Trigger to update the 'updated_at' column
-CREATE OR REPLACE FUNCTION update_modified_column()
-RETURNS TRIGGER AS $$
+-- Create votes table
+CREATE TABLE votes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, company_id)
+);
+
+-- Create function to handle votes
+CREATE OR REPLACE FUNCTION handle_vote(p_user_id UUID, p_company_id UUID)
+RETURNS TABLE (action TEXT, vote_count BIGINT) AS $$
+DECLARE
+    v_exists BOOLEAN;
 BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
+    -- Check if the vote exists
+    SELECT EXISTS (
+        SELECT 1 FROM votes
+        WHERE user_id = p_user_id AND company_id = p_company_id
+    ) INTO v_exists;
+
+    IF v_exists THEN
+        -- Remove vote
+        DELETE FROM votes
+        WHERE user_id = p_user_id AND company_id = p_company_id;
+        action := 'removed';
+    ELSE
+        -- Add vote
+        INSERT INTO votes (user_id, company_id)
+        VALUES (p_user_id, p_company_id);
+        action := 'added';
+    END IF;
+
+    -- Get the new vote count
+    SELECT COUNT(*) INTO vote_count
+    FROM votes
+    WHERE company_id = p_company_id;
+
+    RETURN NEXT;
 END;
 $$ LANGUAGE plpgsql;
 
--- Apply the trigger to all tables
-CREATE TRIGGER update_users_modtime
-BEFORE UPDATE ON users
-FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+-- Create trigger to update companies.updated_at
+CREATE OR REPLACE FUNCTION update_company_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+}$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_user_profiles_modtime
-BEFORE UPDATE ON user_profiles
-FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+CREATE TRIGGER update_company_timestamp
+BEFORE UPDATE ON companies
+FOR EACH ROW
+EXECUTE FUNCTION update_company_timestamp();
 
-CREATE TRIGGER update_startups_modtime
-BEFORE UPDATE ON startups
-FOR EACH ROW EXECUTE FUNCTION update_modified_column();
-
-CREATE TRIGGER update_upvotes_modtime
-BEFORE UPDATE ON upvotes
-FOR EACH ROW EXECUTE FUNCTION update_modified_column();
-
--- Index for faster queries
-CREATE INDEX idx_startup_founder ON startups(founder_id);
-CREATE INDEX idx_upvotes_startup ON upvotes(startup_id);
-CREATE INDEX idx_upvotes_user ON upvotes(user_id);
+-- Create index for faster vote counting
+CREATE INDEX idx_votes_company_id ON votes(company_id);
