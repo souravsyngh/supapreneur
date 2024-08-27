@@ -25,6 +25,10 @@ CREATE TABLE votes (
     UNIQUE(user_id, company_id)
 );
 
+-- Drop handle_upvote if exits
+
+DROP FUNCTION IF EXISTS handle_vote(uuid, uuid);
+
 -- Create function to handle votes
 CREATE OR REPLACE FUNCTION handle_vote(p_user_id UUID, p_company_id UUID)
 RETURNS TABLE (action TEXT, vote_count BIGINT) AS $$
