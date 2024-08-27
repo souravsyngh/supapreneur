@@ -1,97 +1,58 @@
 import { supabase } from '/opt/nodejs/index.mjs';
 
+const headers = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+const handleVoteTransaction = async (userId, companyId) => {
+  const response = await supabase.rpc('handle_vote', { p_user_id: userId, p_company_id: companyId });
+  return response; 
+};
+
+const isValidUUID = (uuid) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
+
 export const handler = async (event) => {
-  const { user_id, startup_id } = JSON.parse(event.body);
-
-  if (!user_id || !startup_id) {
-    return {
-      statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Invalid input data' }),
-    };
-  }
-
   try {
-    // Step 1: Fetch existing upvote status for the user and startup
-    const { data: existingUpvote, error: fetchError } = await supabase
-      .from('upvotes')
-      .select('id, is_upvote')
-      .eq('user_id', user_id)
-      .eq('startup_id', startup_id)
-      .single();
+    const { userId, companyId } = event.body; // Parse the body
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
+    if (!userId || !companyId || !isValidUUID(userId) || !isValidUUID(companyId)) {
       return {
-        statusCode: 500,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Error fetching upvote status' }),
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ message: 'Invalid or missing userId or companyId' }),
       };
     }
 
-    // Step 2: If an upvote exists, toggle its status
-    if (existingUpvote) {
-      const newIsUpvote = !existingUpvote.is_upvote;
-      const { error: updateError } = await supabase
-        .from('upvotes')
-        .update({ is_upvote: newIsUpvote, updated_at: new Date().toISOString() })
-        .eq('id', existingUpvote.id);
-
-      if (updateError) {
-        return {
-          statusCode: 500,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Error updating upvote' }),
-        };
-      }
-    } else {
-      // Step 3: If no upvote exists, insert a new one with is_upvote = true
-      const { error: insertError } = await supabase
-        .from('upvotes')
-        .insert({ user_id, startup_id, is_upvote: true });
-
-      if (insertError) {
-        return {
-          statusCode: 500,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Error inserting upvote' }),
-        };
-      }
+    const response = await handleVoteTransaction(userId, companyId);
+    
+    if (response.error) {
+      throw new Error('Failed to process vote');
     }
 
-    // Step 4: Fetch the updated upvote count
-    const { count: upvoteCount, error: countError } = await supabase
-      .from('upvotes')
-      .select('*', { count: 'exact', head: true })
-      .eq('startup_id', startup_id)
-      .eq('is_upvote', true);
+    const { action, vote_count } = response.data[0]; 
 
-    if (countError) {
-      return {
-        statusCode: 500,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Error fetching upvote count' }),
-      };
-    }
+    console.log(`Vote ${action} for company ${companyId}. New vote count: ${vote_count}`);
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
+      headers,
       body: JSON.stringify({
-        message: 'Upvote status updated successfully',
-        upvote_count: upvoteCount,
+        message: `Vote ${action} successfully`,
+        companyId,
+        voteCount: vote_count
       }),
     };
   } catch (error) {
-    console.error('Internal Server Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Internal Server Error' }),
+      headers,
+      body: JSON.stringify({ message: 'Internal server error', error: error.message }),
     };
   }
 };
