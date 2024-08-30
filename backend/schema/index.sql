@@ -1,14 +1,14 @@
--- Create companies table
-CREATE TABLE companies (
+-- Create users table
+CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create users table
-CREATE TABLE IF NOT EXISTS companies (
+-- Create companies table
+CREATE TABLE companies (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     description TEXT,
