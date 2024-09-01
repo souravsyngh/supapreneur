@@ -1,0 +1,28 @@
+{
+  "menuItems": [
+    { "text": "Companies", "icon": "Lightbulb" },
+    { "text": "Network", "icon": "User" },
+    { "text": "Investors", "icon": "DollarSign" },
+    { "text": "Events", "icon": "Calendar" },
+    { "text": "Co-Founder", "icon": "Users" },
+    { "text": "Partners", "icon": "Handshake" }
+  ],
+  "newsItems": [
+    {
+      "title": "Latest Investment Round",
+      "description": "OpenAI is in talks to raise a new round of funding at an eye-popping $100 billion-plus valuation.",
+      "link": "https://techcrunch.com/2024/08/30/investors-are-already-valuing-openai-at-over-100b-on-the-secondaries-market/"
+    },
+    {
+      "title": "New Partnership Announced",
+      "description": "Major corporations A and B join forces for sustainable innovation.",
+      "link": "https://www.google.com"
+    },
+    {
+      "title": "Startup Acquisition",
+      "description": "Growing company ABC acquires promising startup DEF.",
+      "link": "https://www.google.com"
+    }
+  ],
+  "copyright": "Copyright © 2024"
+}
