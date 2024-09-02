@@ -8,13 +8,17 @@ CREATE TABLE users (
 );
 
 -- Create companies table
-CREATE TABLE companies (
+  CREATE TABLE IF NOT EXISTS companies (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    upvotes BIGINT DEFAULT 0,
+    title VARCHAR(255) NOT NULL,
+    tagline TEXT,
+    tags TEXT[],
+    date_founded DATE,
+    logo TEXT,
+    slug TEXT UNIQUE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    upvotes INTEGER DEFAULT 0,
     location TEXT,
     region TEXT,
     sector TEXT,
@@ -24,16 +28,15 @@ CREATE TABLE companies (
     status TEXT CHECK (status IN ('raising_now', 'upcoming_raise')),
     description TEXT,
     pitch_deck TEXT,
-    product_images JSONB,
+    product_images TEXT[],
     pitch_video TEXT,
     what TEXT,
     why TEXT,
     how TEXT,
     round_size DECIMAL(15, 2),
     amount_raised DECIMAL(15, 2),
-    tech_stack JSONB
+    tech_stack TEXT[]
 );
-
 -- Create votes table
 CREATE TABLE votes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
