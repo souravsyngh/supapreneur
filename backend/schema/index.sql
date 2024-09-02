@@ -15,6 +15,23 @@ CREATE TABLE companies (
     upvotes BIGINT DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    location TEXT,
+    region TEXT,
+    sector TEXT,
+    industry TEXT,
+    stage TEXT CHECK (stage IN ('prototype', 'revenue', 'product_market_fit')),
+    links JSONB,
+    status TEXT CHECK (status IN ('raising_now', 'upcoming_raise')),
+    description TEXT,
+    pitch_deck TEXT,
+    product_images JSONB,
+    pitch_video TEXT,
+    what TEXT,
+    why TEXT,
+    how TEXT,
+    round_size DECIMAL(15, 2),
+    amount_raised DECIMAL(15, 2),
+    tech_stack JSONB
 );
 
 -- Create votes table
