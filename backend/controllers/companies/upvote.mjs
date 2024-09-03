@@ -1,3 +1,4 @@
+
 import { supabase } from '/opt/nodejs/index.mjs';
 
 const handleVoteTransaction = async (userId, companyId) => {
@@ -6,20 +7,15 @@ const handleVoteTransaction = async (userId, companyId) => {
 };
 
 export const handler = async (event) => {  
-   const headers = {
-        'Access-Control-Allow-Origin': '*', 
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Content-Type': 'application/json',
-    };
+  const headers = {
+    'Access-Control-Allow-Origin': '*', 
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json',
+  };
 
   try {
-    let body;
-    if (typeof event.body === 'string') {
-      body = JSON.parse(event.body);
-    } else {
-      body = event.body;
-    }
+    let body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
     
     console.log('Received body:', body);
 
@@ -55,7 +51,8 @@ export const handler = async (event) => {
       body: JSON.stringify({
         message: `Vote ${action} successfully`,
         companyId,
-        voteCount: vote_count
+        voteCount: vote_count,
+        action
       }),
     };
   } catch (error) {
